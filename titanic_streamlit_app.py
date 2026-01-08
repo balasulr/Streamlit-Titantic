@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 st.set_page_config(page_title="Explore Titantic dataset with Streamlit", layout="wide")
 
@@ -47,6 +49,47 @@ st.write(df.head())
 
 # Show dataset shape
 st.write("The dataset has {} rows and {} columns.".format(df.shape[0], df.shape[1]))
+
+# Data types overview
+st.subheader("Data Types Overview to help distinguish between numerical features, categorical identifiers, and the target label:")
+st.write(df.dtypes.value_counts())
+st.write("There are 2 numerical features (float64), 5 categorical features (object), and 1 target label (int64).")
+
+# Summary statistics
+st.write("Summary statistics for all columns transposed:")
+st.write(df.describe(include='all').T)
+
+# Graphs
+st.subheader("Graphs to visualize data distributions and relationships:")
+
+# Gender Distribution Pie Chart
+st.subheader("Gender Distribution Pie Chart:")
+st.write("The pie chart below shows the distribution of male and female passengers on the Titanic.")
+# Create two columns for layout
+col1, col2 = st.columns([1, 2])
+with col1:
+    st.markdown("### Gender Distribution")
+    # Create compact pie chart
+    fig, ax = plt.subplots(figsize=(2.5, 2.5))
+    # Plot pie chart
+    df["Sex"].value_counts().plot(
+        kind='pie',
+        autopct='%1.1f%%',
+        ax=ax,
+        startangle=90,
+        wedgeprops={'linewidth': 1, 'edgecolor': 'white'},
+        textprops={'fontsize': 8}
+    )
+    # Clean up the pie chart
+    ax.set_ylabel("")
+    ax.set_title("Gender Distribution", fontsize=10)
+    # Display the pie chart in Streamlit
+    st.pyplot(fig)
+with col2:
+    st.markdown("### Summary:")
+    st.write("This chart shows the proportion of male and female passengers in the Titanic dataset.")
+    st.write("You can compare this with survival rates by gender to explore deeper insights.")
+
 
 # See if have missing values
 st.subheader("Missing Values Overview")
