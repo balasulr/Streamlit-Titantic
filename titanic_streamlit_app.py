@@ -3,8 +3,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# Set Streamlit page configuration
 st.set_page_config(page_title="Explore Titantic dataset with Streamlit", layout="wide")
 
+# Title and subtitle
 st.title("Explore Titanic Dataset with Streamlit")
 st.subheader("This Streamlit app explores the Titanic dataset to uncover survival insights and visualize passenger data")
 
@@ -15,6 +17,8 @@ df = pd.read_csv(data_url)
 # Displays the full dataframe
 st.write(df)
 
+# Dataset overview
+st.subheader("Dataset Overview: Titanic Passenger Data")
 st.subheader("The above dataset contains information about Titanic passengers, including whether they survived, their age, class, fare, and more")
 
 # Column overview
@@ -26,6 +30,7 @@ st.write("The columns in the dataset are: {}".format(", ".join(df.columns)))
 # Column Descriptions
 st.subheader("Column Descriptions")
 
+# Create a dictionary for column descriptions
 column_info = {
     "PassengerId": "Unique identifier for each passenger",
     "Survived": "Survival indicator (0 = No, 1 = Yes)",
@@ -41,9 +46,16 @@ column_info = {
     "Embarked": "Port of embarkation (C, Q, S)"
 }
 
+# Convert dictionary to DataFrame for better display
 desc_df = pd.DataFrame.from_dict(column_info, orient='index', columns=["Description"])
+
+# Display the descriptions in a table
 st.table(desc_df)
 
+# Initial data exploration
+st.subheader("Initial Data Exploration")
+
+# Show first few rows
 st.subheader("Here are the first few rows of the dataset:")
 st.write(df.head())
 
@@ -59,37 +71,76 @@ st.write("There are 2 numerical features (float64), 5 categorical features (obje
 st.write("Summary statistics for all columns transposed:")
 st.write(df.describe(include='all').T)
 
-# Graphs
+# Data Visualization
 st.subheader("Graphs to visualize data distributions and relationships:")
 
-# Gender Distribution Pie Chart
-st.subheader("Gender Distribution Pie Chart:")
-st.write("The pie chart below shows the distribution of male and female passengers on the Titanic.")
-# Create two columns for layout
-col1, col2 = st.columns([1, 2])
+st.header("Data Visualization: Choose Chart Type and Column")
+
+# Two dropdowns in columns
+col1, col2 = st.columns(2)
+
 with col1:
-    st.markdown("### Gender Distribution")
-    # Create compact pie chart
-    fig, ax = plt.subplots(figsize=(2.5, 2.5))
-    # Plot pie chart
-    df["Sex"].value_counts().plot(
-        kind='pie',
-        autopct='%1.1f%%',
+    chart_type = st.selectbox(
+        "Select Chart Type",
+        ["Pie Chart", "Scatter Plot", "Histogram", "Bar Chart"]
+    )
+
+with col2:
+    # Dynamically choose column based on chart type
+    if chart_type in ["Pie Chart", "Bar Chart"]:
+        category = st.selectbox("Select Column", df.columns)
+
+    elif chart_type == "Histogram":
+        category = st.selectbox(
+            "Select Numeric Column",
+            df.select_dtypes(include=["int", "float"]).columns
+        )
+
+    elif chart_type == "Scatter Plot":
+        x_col = st.selectbox(
+            "X-axis",
+            df.select_dtypes(include=["int", "float"]).columns
+        )
+        y_col = st.selectbox(
+            "Y-axis",
+            df.select_dtypes(include=["int", "float"]).columns
+        )
+
+# Render chart
+st.subheader("Visualization")
+
+if chart_type == "Pie Chart":
+    fig, ax = plt.subplots(figsize=(3, 3))
+    df[category].value_counts().plot(
+        kind="pie",
+        autopct="%1.1f%%",
         ax=ax,
         startangle=90,
-        wedgeprops={'linewidth': 1, 'edgecolor': 'white'},
-        textprops={'fontsize': 8}
+        textprops={"fontsize": 8}
     )
-    # Clean up the pie chart
     ax.set_ylabel("")
-    ax.set_title("Gender Distribution", fontsize=10)
-    # Display the pie chart in Streamlit
     st.pyplot(fig)
-with col2:
-    st.markdown("### Summary:")
-    st.write("This chart shows the proportion of male and female passengers in the Titanic dataset.")
-    st.write("You can compare this with survival rates by gender to explore deeper insights.")
 
+elif chart_type == "Bar Chart":
+    fig, ax = plt.subplots(figsize=(4, 3))
+    df[category].value_counts().plot(kind="bar", ax=ax, color="teal")
+    ax.set_xlabel(category)
+    ax.set_ylabel("Count")
+    st.pyplot(fig)
+
+elif chart_type == "Histogram":
+    fig, ax = plt.subplots(figsize=(4, 3))
+    ax.hist(df[category].dropna(), bins=20, color="skyblue", edgecolor="black")
+    ax.set_xlabel(category)
+    ax.set_ylabel("Frequency")
+    st.pyplot(fig)
+
+elif chart_type == "Scatter Plot":
+    fig, ax = plt.subplots(figsize=(4, 3))
+    ax.scatter(df[x_col], df[y_col], alpha=0.6)
+    ax.set_xlabel(x_col)
+    ax.set_ylabel(y_col)
+    st.pyplot(fig)
 
 # See if have missing values
 st.subheader("Missing Values Overview")
