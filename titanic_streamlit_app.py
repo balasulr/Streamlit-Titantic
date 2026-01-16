@@ -73,44 +73,52 @@ st.write(df.describe(include='all').T)
 
 # Data Visualization
 st.subheader("Graphs to visualize data distributions and relationships:")
-
 st.header("Data Visualization")
 
 # Two dropdowns
 col1, col2 = st.columns(2)
 
-with col1: chart_type = st.selectbox(
+chart_type = col1.selectbox(
     "Select Chart Type",
     [ "Pie Chart",
      "Bar Chart",
      "Histogram",
      "Scatter Plot (Simple)",
      "Scatter Plot (Complex)",
-     "Heatmap"
+     "Heatmap (Categorical)",
+     "Heatmap (Numerical Correlation)"
     ]
 )
 
+# Dynamic column selection based on chart type
 with col2:
-    # Dynamic column selection
     if chart_type in ["Pie Chart", "Histogram"]:
-        category = st.selectbox("Select Column", df.columns)
+        category = st.selectbox("Select Column", df.columns, key="cat_select")
     
     elif chart_type == "Bar Chart":
-        bar_x = st.selectbox("X-axis Category", df.columns)
-        bar_hue = st.selectbox("Group By", df.columns)
+        bar_x = st.selectbox("X-axis Category", df.columns, key="bar_x")
+        bar_hue = st.selectbox("Group By", df.columns, key="bar_hue")
 
     elif chart_type == "Scatter Plot (Simple)":
-        x_col = st.selectbox("X-axis", df.columns)
-        y_col = st.selectbox("Y-axis", df.columns)
-    
-    elif chart_type == "Scatter Plot (Complex)":
-        x_col = st.selectbox("X-axis", df.columns)
-        y_col = st.selectbox("Y-axis", df.columns)
-        hue_col = st.selectbox("Color By", df.columns)
+        x_col = st.selectbox("X-axis", df.columns, key="simple_x")
+        y_col = st.selectbox("Y-axis", df.columns, key="simple_y")
 
-    elif chart_type == "Heatmap":
-        heat_x = st.selectbox("Heatmap X-axis", df.columns)
-        heat_y = st.selectbox("Heatmap Y-axis", df.columns)
+    elif chart_type == "Scatter Plot (Complex)":
+        x_col = st.selectbox("X-axis", df.columns, key="complex_x")
+        y_col = st.selectbox("Y-axis", df.columns, key="complex_y")
+        hue_col = st.selectbox("Color By", df.columns, key="complex_hue")
+    
+    elif chart_type == "Heatmap (Categorical)":
+        categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
+        categorical_cols += ["Pclass", "Survived", "Embarked", "Sex"]
+
+        heat_x = st.selectbox("Heatmap X-axis", categorical_cols, index=categorical_cols.index("Pclass"), key="cat_heat_x")
+        heat_y = st.selectbox("Heatmap Y-axis", categorical_cols, index=categorical_cols.index("Survived"), key="cat_heat_y")
+    
+    elif chart_type == "Heatmap (Numerical Correlation)":
+        st.write("Shows correlation between numerical features.")
+        # No dropdowns needed
+        pass
 
 # Pie Chart
 if chart_type == "Pie Chart":
@@ -137,19 +145,18 @@ elif chart_type == "Bar Chart":
 elif chart_type == "Histogram":
     fig, ax = plt.subplots(figsize=(4, 3))
     
+    # Check if the column is categorical or numerical
     if df[category].dtype == "object":
         # Categorical histogram
         df[category].value_counts().plot(kind="bar", ax=ax, color="purple")
         ax.set_title(f"{category} Frequency")
-        ax.set_xlabel(category)
-        ax.set_ylabel("Count")
     else:
         # Numerical histogram
         ax.hist(df[category].dropna(), bins=20, color="skyblue", edgecolor="black")
         ax.set_title(f"Histogram of {category}")
-        ax.set_xlabel(category)
-        ax.set_ylabel("Frequency")
-        
+    
+    ax.set_xlabel(category)
+    ax.set_ylabel("Count")
     st.pyplot(fig)
 
 # Simple Scatter
@@ -175,13 +182,14 @@ elif chart_type == "Scatter Plot (Complex)":
     ax.set_title(f"{x_col} vs {y_col} colored by {hue_col}")
     st.pyplot(fig)
 
-# Heatmap
-elif chart_type == "Heatmap":
-    heat_x = st.selectbox("Heatmap X-axis", df.columns, key="heat_x")
-    heat_y = st.selectbox("Heatmap Y-axis", df.columns, key="heat_y")
-    
-    heatmap_data = df.pivot_table(index=heat_y, columns=heat_x, aggfunc="size", fill_value=0)
-    
+# Categorical Heatmap
+elif chart_type == "Heatmap (Categorical)":    
+    df_clean = df[[heat_x, heat_y]].dropna()
+    heatmap_data = df_clean.pivot_table(index=heat_y, columns=heat_x, aggfunc="size", fill_value=0)
+
+    if heatmap_data.shape[0] > 50 or heatmap_data.shape[1] > 50:
+        st.warning("This heatmap has too many categories and may take a long time to render.")
+
     if heatmap_data.empty:
         st.write("No data available for the selected combination.")
     else:
@@ -189,6 +197,16 @@ elif chart_type == "Heatmap":
         sns.heatmap(heatmap_data, annot=True, cmap="Blues", fmt="d", ax=ax)
         ax.set_title(f"Heatmap: {heat_y} vs {heat_x}")
         st.pyplot(fig)
+
+# Numerical Correlation Heatmap
+elif chart_type == "Heatmap (Numerical Correlation)":
+    numeric_df = df.select_dtypes(include=["int64", "float64"])
+    corr = numeric_df.corr()
+    
+    fig, ax = plt.subplots(figsize=(6, 4))
+    sns.heatmap(corr, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax)
+    ax.set_title("Numerical Correlation Heatmap")
+    st.pyplot(fig)
 
 # See if have missing values
 st.subheader("Missing Values Overview")
