@@ -74,43 +74,49 @@ st.write(df.describe(include='all').T)
 # Data Visualization
 st.subheader("Graphs to visualize data distributions and relationships:")
 
-st.header("Data Visualization: Choose Chart Type and Column")
+st.header("Data Visualization")
 
-# Two dropdowns in columns
+# Two dropdowns
 col1, col2 = st.columns(2)
 
-with col1:
-    chart_type = st.selectbox(
-        "Select Chart Type",
-        ["Pie Chart", "Scatter Plot", "Histogram", "Bar Chart"]
-    )
+with col1: chart_type = st.selectbox(
+    "Select Chart Type",
+    [ "Pie Chart",
+     "Bar Chart",
+     "Histogram",
+     "Scatter Plot (Simple)",
+     "Scatter Plot (Complex)",
+     "Heatmap: Class vs Survival"
+    ]
+)
 
 with col2:
-    # Dynamically choose column based on chart type
-    if chart_type in ["Pie Chart", "Bar Chart"]:
+    # Dynamic column selection
+    if chart_type in ["Pie Chart", "Bar Chart", "Histogram"]:
         category = st.selectbox("Select Column", df.columns)
-
-    elif chart_type == "Histogram":
-        category = st.selectbox(
-            "Select Numeric Column",
-            df.select_dtypes(include=["int", "float"]).columns
-        )
-
-    elif chart_type == "Scatter Plot":
-        x_col = st.selectbox(
-            "X-axis",
-            df.select_dtypes(include=["int", "float"]).columns
-        )
-        y_col = st.selectbox(
-            "Y-axis",
-            df.select_dtypes(include=["int", "float"]).columns
+    
+    elif chart_type == "Scatter Plot (Simple)":
+        x_col = st.selectbox("X-axis", df.select_dtypes(include=["int", "float"]).columns)
+        y_col = st.selectbox("Y-axis", df.select_dtypes(include=["int", "float"]).columns)
+    
+    elif chart_type == "Scatter Plot (Complex)":
+        complex_option = st.selectbox(
+            "Choose Complex Scatter Plot",
+            [
+                "Fare vs Age colored by Class",
+                "Fare vs Age colored by Sex",
+                "Fare vs Age colored by Embarked",
+                "Age vs Survived colored by Sex",
+                "Age vs Survived colored by Class"
+            ]
         )
 
 # Render chart
 st.subheader("Visualization")
 
+# Pie Chart
 if chart_type == "Pie Chart":
-    fig, ax = plt.subplots(figsize=(3, 3))
+    fig, ax = plt.subplots(figsize=(4, 3))
     df[category].value_counts().plot(
         kind="pie",
         autopct="%1.1f%%",
@@ -119,27 +125,74 @@ if chart_type == "Pie Chart":
         textprops={"fontsize": 8}
     )
     ax.set_ylabel("")
+    ax.set_title(f"{category} Distribution", fontsize=12)
     st.pyplot(fig)
 
+# Bar Chart
 elif chart_type == "Bar Chart":
     fig, ax = plt.subplots(figsize=(4, 3))
     df[category].value_counts().plot(kind="bar", ax=ax, color="teal")
     ax.set_xlabel(category)
     ax.set_ylabel("Count")
+    ax.set_title(f"{category} Bar Chart")
     st.pyplot(fig)
 
+# Histogram
 elif chart_type == "Histogram":
-    fig, ax = plt.subplots(figsize=(4, 3))
-    ax.hist(df[category].dropna(), bins=20, color="skyblue", edgecolor="black")
-    ax.set_xlabel(category)
-    ax.set_ylabel("Frequency")
+    fig, ax = plt.subplots(figsize=(3, 2))
+    
+    if df[category].dtype == "object":
+        # Categorical histogram
+        df[category].value_counts().plot(kind="bar", ax=ax, color="purple")
+        ax.set_title(f"{category} Frequency")
+        ax.set_xlabel(category)
+        ax.set_ylabel("Count")
+    else:
+        # Numeric histogram
+        ax.hist(df[category].dropna(), bins=20, color="skyblue", edgecolor="black")
+        ax.set_title(f"Histogram of {category}")
+        ax.set_xlabel(category)
+        ax.set_ylabel("Frequency")
+        
     st.pyplot(fig)
 
-elif chart_type == "Scatter Plot":
-    fig, ax = plt.subplots(figsize=(4, 3))
+# Simple Scatter Plot
+elif chart_type == "Scatter Plot (Simple)":
+    fig, ax = plt.subplots(figsize=(3, 2))
     ax.scatter(df[x_col], df[y_col], alpha=0.6)
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
+    ax.set_title(f"{x_col} vs {y_col}")
+    st.pyplot(fig)
+
+# Complex Scatter Plot
+elif chart_type == "Scatter Plot (Complex)":
+    fig, ax = plt.subplots(figsize=(4, 3))
+    
+    if complex_option == "Fare vs Age colored by Class":
+        sns.scatterplot(data=df, x="Age", y="Fare", hue="Pclass", ax=ax)
+    
+    elif complex_option == "Fare vs Age colored by Sex":
+        sns.scatterplot(data=df, x="Age", y="Fare", hue="Sex", ax=ax)
+    
+    elif complex_option == "Fare vs Age colored by Embarked":
+        sns.scatterplot(data=df, x="Age", y="Fare", hue="Embarked", ax=ax)
+    
+    elif complex_option == "Age vs Survived colored by Sex":
+        sns.scatterplot(data=df, x="Age", y="Survived", hue="Sex", ax=ax)
+    
+    elif complex_option == "Age vs Survived colored by Class":
+        sns.scatterplot(data=df, x="Age", y="Survived", hue="Pclass", ax=ax)
+    
+    ax.set_title(complex_option)
+    st.pyplot(fig)
+
+# Heatmap
+elif chart_type == "Heatmap: Class vs Survival":
+    heatmap_data = df.pivot_table(index="Pclass", columns="Survived", aggfunc="size", fill_value=0)
+    fig, ax = plt.subplots(figsize=(4, 3))
+    sns.heatmap(heatmap_data, annot=True, cmap="Blues", fmt="d", ax=ax)
+    ax.set_title("Class vs Survival Heatmap")
     st.pyplot(fig)
 
 # See if have missing values
