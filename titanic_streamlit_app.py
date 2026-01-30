@@ -144,12 +144,32 @@ if chart_type == "Pie Chart":
     ax.set_title(f"{category} Distribution", fontsize=12)
     st.pyplot(fig)
 
+    # Provide insights
+    st.subheader("Insights / Analysis")
+    top_value = df[category].value_counts().idxmax()
+    top_count = df[category].value_counts().max()
+
+    st.write(f"""
+    • The most common category in **{category}** is **{top_value}** with **{top_count} passengers**.  
+    • This distribution helps identify dominant groups in the dataset.  
+    """)
+
 # Bar Chart
 elif chart_type == "Bar Chart":
     fig, ax = plt.subplots(figsize=(5, 3))
     sns.countplot(data=df, x=bar_x, hue=bar_hue, ax=ax)
     ax.set_title(f"{bar_x} by {bar_hue}")
     st.pyplot(fig)
+
+    # Provide insights
+    st.subheader("Insights / Analysis")
+    largest_group = df.groupby([bar_x, bar_hue]).size().idxmax()
+    largest_count = df.groupby([bar_x, bar_hue]).size().max()
+
+    st.write(f"""
+    • The largest group is **{largest_group}** with **{largest_count} passengers**.  
+    • This chart highlights how **{bar_hue}** varies across **{bar_x}**.  
+    """)
 
 # Histogram
 elif chart_type == "Histogram":
@@ -168,6 +188,22 @@ elif chart_type == "Histogram":
     ax.set_ylabel("Count")
     st.pyplot(fig)
 
+    # Provide insights
+    st.subheader("Insights / Analysis")
+
+    if df[category].dtype == "object":
+        most_common = df[category].value_counts().idxmax()
+        st.write(f"""
+        • The most frequent category in **{category}** is **{most_common}**.  
+        • This helps identify dominant categorical groups.  
+        """)
+    else:
+        mean_val = df[category].mean()
+        st.write(f"""
+        • The average value of **{category}** is **{mean_val:.2f}**.  
+        • The histogram shows how values are distributed around this mean.  
+        """)
+
 # Simple Scatter
 elif chart_type == "Scatter Plot (Simple)":
     fig, ax = plt.subplots(figsize=(4, 3))
@@ -183,12 +219,30 @@ elif chart_type == "Scatter Plot (Simple)":
     ax.set_title(f"{x_col} vs {y_col}")
     st.pyplot(fig)
 
+    # Provide insights
+    st.subheader("Insights / Analysis")
+    corr_val = df_numeric[[x_col, y_col]].corr().iloc[0,1]
+
+    st.write(f"""
+    • The correlation between **{x_col}** and **{y_col}** is **{corr_val:.2f}**.  
+    • This indicates the strength and direction of their relationship.  
+    """)
+
+
 # Complex Scatter
 elif chart_type == "Scatter Plot (Complex)":
     fig, ax = plt.subplots(figsize=(5, 4))
     sns.scatterplot(data=df, x=x_col, y=y_col, hue=hue_col, ax=ax)
     ax.set_title(f"{x_col} vs {y_col} colored by {hue_col}")
     st.pyplot(fig)
+
+    # Provide insights
+    st.subheader("Insights / Analysis")
+    st.write(f"""
+    • This chart shows how **{y_col}** varies with **{x_col}** across different **{hue_col}** groups.  
+    • Look for clustering or separation between colors to identify group differences.  
+    """)
+
 
 # Categorical Heatmap
 elif chart_type == "Heatmap (Categorical)":    
@@ -208,6 +262,17 @@ elif chart_type == "Heatmap (Categorical)":
         ax.set_title(f"Heatmap: {heat_y} vs {heat_x}")
         st.pyplot(fig)
 
+        # Provide insights
+        st.subheader("Insights / Analysis")
+        max_cell = heatmap_data.values.max()
+        max_loc = list(zip(*divmod(heatmap_data.values.argmax(), heatmap_data.shape)))
+
+        st.write(f"""
+        • The highest count is **{max_cell}**, indicating the strongest category combination.  
+        • Darker cells represent larger passenger groups.  
+        • This heatmap highlights how **{heat_x}** and **{heat_y}** interact.  
+        """)
+
 # Numerical Correlation Heatmap
 elif chart_type == "Heatmap (Numerical Correlation)":
     numeric_df = df.select_dtypes(include=["int64", "float64"])
@@ -217,6 +282,16 @@ elif chart_type == "Heatmap (Numerical Correlation)":
     sns.heatmap(corr, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax)
     ax.set_title("Numerical Correlation Heatmap")
     st.pyplot(fig)
+
+    # Provide insights
+    st.subheader("Insights / Analysis")
+    surv_corr = corr['Survived'].sort_values(ascending=False)
+
+    st.write(f"""
+    • The strongest positive correlation with survival is **{surv_corr.index[1]} ({surv_corr.iloc[1]:.2f})**.  
+    • The strongest negative correlation with survival is **{surv_corr.index[-1]} ({surv_corr.iloc[-1]:.2f})**.  
+    • This helps identify which numeric features matter most.  
+    """)
 
 # See if have missing values
 st.subheader("Missing Values Overview")
