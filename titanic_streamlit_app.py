@@ -296,20 +296,23 @@ elif chart_type == "Heatmap (Numerical Correlation)":
 # Data Cleaning
 st.header("Data Cleaning")
 
+# Create a copy of the original dataframe to clean
 df_cleaned = df.copy()
 
 # Handle missing values
+
+# Fill missing Age with median, Embarked with mode
 df_cleaned['Age'].fillna(df['Age'].median(), inplace=True)
 df_cleaned['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
 
 # Drop Cabin column since it has too many missing values
 df_cleaned.drop(columns=['Cabin'], inplace=True)
 
-# Fix data types
+# Convert Pclass and Survived to categorical
 df_cleaned['Pclass'] = df_cleaned['Pclass'].astype('category')
 df_cleaned['Survived'] = df_cleaned['Survived'].astype('category')
 
-# Feature engineering
+# Create FamilySize and IsAlone features
 df_cleaned['FamilySize'] = df_cleaned['SibSp'] + df_cleaned['Parch'] + 1
 df_cleaned['IsAlone'] = (df_cleaned['FamilySize'] == 1).astype(int)
 
@@ -320,6 +323,7 @@ df_cleaned.drop(columns=['SibSp', 'Parch'], inplace=True)
 st.write("Preview of cleaned data:")
 st.write(df_cleaned.head())
 
+# Show missing values after cleaning
 st.subheader("Missing Values Overview (After Cleaning)")
 missing_counts_clean = df_cleaned.isnull().sum()
 missing_percent_clean = (missing_counts_clean / len(df_cleaned)) * 100
@@ -339,6 +343,7 @@ st.header("4. Visualizations & Insights (Using Cleaned Data)")
 st.subheader("Graphs to visualize data distributions and relationships:")
 st.caption("All visualizations below use the cleaned dataset.")
 
+# Two dropdowns for selecting chart type and columns (cleaned data)
 col1, col2 = st.columns(2)
 
 chart_type = col1.selectbox(
@@ -355,10 +360,11 @@ chart_type = col1.selectbox(
     ]
 )
 
+# Dynamic column selection based on chart type
 with col2:
     if chart_type in ["Pie Chart", "Histogram"]:
         category = st.selectbox("Select Column", df_cleaned.columns, key="cat_select_clean")
-    
+
     elif chart_type == "Bar Chart":
         bar_x = st.selectbox("X-axis Category", df_cleaned.columns, key="bar_x")
         bar_hue = st.selectbox("Group By", df_cleaned.columns, key="bar_hue")
@@ -397,29 +403,32 @@ if chart_type == "Pie Chart":
     ax.set_ylabel("")
     ax.set_title(f"{category} Distribution", fontsize=12)
     st.pyplot(fig)
-        
+
+    # Provide insights        
     st.subheader("Insights / Analysis")
     top_value = df_cleaned[category].value_counts().idxmax()
     top_count = df_cleaned[category].value_counts().max()
     st.write(f"- The most common category in **{category}** is **{top_value}** with **{top_count} passengers**.")
     
-# BAR CHART
+# Bar Chart
 elif chart_type == "Bar Chart":
     fig, ax = plt.subplots(figsize=(5, 3))
     sns.countplot(data=df_cleaned, x=bar_x, hue=bar_hue, ax=ax)
     ax.set_title(f"{bar_x} by {bar_hue}")
     st.pyplot(fig)
-        
+
+    # Provide insights    
     st.subheader("Insights / Analysis")
     group_sizes = df_cleaned.groupby([bar_x, bar_hue]).size()
     largest_group = group_sizes.idxmax()
     largest_count = group_sizes.max()
     st.write(f"- The largest group is **{largest_group}** with **{largest_count} passengers**.")
     
-# HISTOGRAM
+# Histogram
 elif chart_type == "Histogram":
     fig, ax = plt.subplots(figsize=(4, 3))
-        
+    
+    # Check if categorical or numerical
     if df_cleaned[category].dtype == "object" or str(df_cleaned[category].dtype) == "category":
         df_cleaned[category].value_counts().plot(kind="bar", ax=ax, color="purple")
         ax.set_title(f"{category} Frequency")
@@ -430,7 +439,8 @@ elif chart_type == "Histogram":
     ax.set_xlabel(category)
     ax.set_ylabel("Count")
     st.pyplot(fig)
-        
+    
+    # Provide insights
     st.subheader("Insights / Analysis")
     if df_cleaned[category].dtype == "object" or str(df_cleaned[category].dtype) == "category":
         most_common = df_cleaned[category].value_counts().idxmax()
@@ -439,7 +449,7 @@ elif chart_type == "Histogram":
         mean_val = df_cleaned[category].mean()
         st.write(f"- The average value of **{category}** is **{mean_val:.2f}**.")
 
-# SIMPLE SCATTER
+# Simple Scatter
 elif chart_type == "Scatter Plot (Simple)":
     fig, ax = plt.subplots(figsize=(4, 3))
         
@@ -453,7 +463,8 @@ elif chart_type == "Scatter Plot (Simple)":
     ax.set_ylabel(y_col)
     ax.set_title(f"{x_col} vs {y_col}")
     st.pyplot(fig)
-        
+    
+    # Provide insights
     st.subheader("Insights / Analysis")
     if df_numeric[[x_col, y_col]].dropna().shape[0] > 1:
         corr_val = df_numeric[[x_col, y_col]].corr().iloc[0, 1]
@@ -461,24 +472,27 @@ elif chart_type == "Scatter Plot (Simple)":
     else:
         st.write("- Not enough data to compute correlation.")
     
-# COMPLEX SCATTER
+# Complex Scatter
 elif chart_type == "Scatter Plot (Complex)":
     fig, ax = plt.subplots(figsize=(5, 4))
     sns.scatterplot(data=df_cleaned, x=x_col, y=y_col, hue=hue_col, ax=ax)
     ax.set_title(f"{x_col} vs {y_col} colored by {hue_col}")
     st.pyplot(fig)
-        
+    
+    # Provide insights
     st.subheader("Insights / Analysis")
     st.write(f"- This chart shows how **{y_col}** varies with **{x_col}** across different **{hue_col}** groups.")
     
-# CATEGORICAL HEATMAP (COUNTS)
+# Categorical Heatmap (Counts)
 elif chart_type == "Heatmap (Categorical – Counts)":
     df_clean = df_cleaned[[heat_x, heat_y]].dropna()
     heatmap_data = df_clean.pivot_table(index=heat_y, columns=heat_x, aggfunc="size", fill_value=0)
-        
+
+    # Warn if too many categories 
     if heatmap_data.shape[0] > 50 or heatmap_data.shape[1] > 50:
         st.warning("This heatmap has too many categories and may take a long time to render.")
-        
+    
+    # Check if heatmap_data is empty
     if heatmap_data.empty:
         st.write("No data available for the selected combination.")
     else:
@@ -486,16 +500,19 @@ elif chart_type == "Heatmap (Categorical – Counts)":
         sns.heatmap(heatmap_data, annot=True, cmap="Blues", fmt="d", ax=ax)
         ax.set_title(f"Heatmap: {heat_y} vs {heat_x} (Counts)")
         st.pyplot(fig)
-            
+        
+        # Provide insights
         st.subheader("Insights / Analysis")
         max_val = heatmap_data.values.max()
         st.write(f"- The highest count in this table is **{max_val}**, indicating the strongest category combination.")
             
-# CATEGORICAL HEATMAP (PERCENTAGES)
+# Categorical Heatmap (Percentages)
 elif chart_type == "Heatmap (Categorical Percentages)":
+    # Prepare percentage table
     df_clean = df_cleaned[[heat_x, heat_y]].dropna()
     count_table = df_clean.pivot_table(index=heat_y, columns=heat_x, aggfunc="size", fill_value=0)
         
+    # Check if count_table is empty
     if count_table.empty:
         st.write("No data available for the selected combination.")
     else:
@@ -503,18 +520,21 @@ elif chart_type == "Heatmap (Categorical Percentages)":
             
         if percent_table.shape[0] > 50 or percent_table.shape[1] > 50:
             st.warning("This heatmap has too many categories and may take a long time to render.")
-            
+        
+        # Plot percentage heatmap
         fig, ax = plt.subplots(figsize=(5, 3))
         sns.heatmap(percent_table, annot=True, cmap="Purples", fmt=".1f", ax=ax)
         ax.set_title(f"Percentage Heatmap: {heat_y} vs {heat_x} (Column %)")
         st.pyplot(fig)
-            
+        
+        # Provide insights
         st.subheader("Insights / Analysis")
         max_pct = percent_table.values.max()
         st.write(f"- The highest percentage in this table is **{max_pct:.1f}%**, showing the strongest proportional relationship.")
     
-# NUMERICAL CORRELATION HEATMAP
+# Numerical Correlation Heatmap
 elif chart_type == "Heatmap (Numerical Correlation)":
+    # Prepare correlation matrix
     numeric_df = df_cleaned.select_dtypes(include=["int64", "float64"])
     corr = numeric_df.corr()
         
@@ -522,7 +542,8 @@ elif chart_type == "Heatmap (Numerical Correlation)":
     sns.heatmap(corr, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax)
     ax.set_title("Numerical Correlation Heatmap")
     st.pyplot(fig)
-        
+    
+    # Provide insights
     st.subheader("Insights / Analysis")
     if "Survived" in corr.columns:
         surv_corr = corr["Survived"].sort_values(ascending=False)
@@ -532,11 +553,11 @@ elif chart_type == "Heatmap (Numerical Correlation)":
     else:
         st.write("- Survived is not numeric in this view, so correlation with survival is not shown.")
     
-# 5. SURVIVAL ANALYSIS SUMMARY
+# Survival Analysis Summary
 st.header("Survival Analysis Highlights (Cleaned Data)")
-    
+
 col_sa1, col_sa2 = st.columns(2)
-    
+
 with col_sa1:
     st.subheader("Survival by Sex")
     fig, ax = plt.subplots(figsize=(4, 3))
@@ -551,23 +572,10 @@ with col_sa2:
     ax.set_ylabel("Survival Rate")
     st.pyplot(fig)
     
+    # Provide insights
     st.subheader("Insights / Analysis")
     st.write(
         "- Females generally show a much higher survival rate than males.\n"
         "- 1st class passengers have the highest survival rate, while 3rd class have the lowest.\n"
         "- These patterns reinforce the impact of gender and socioeconomic status on survival."
     )
-
-
-st.write("->->-------")
-# See if have missing values
-st.subheader("Missing Values Overview")
-missing_counts = df.isnull().sum()
-missing_percent = (missing_counts / len(df)) * 100
-missing_df = pd.DataFrame({
-    "Missing Count": missing_counts,
-    "Missing %": missing_percent
-})
-
-st.dataframe(missing_df[missing_df["Missing Count"] > 0])
-st.write("There are missing values present in the dataset")
