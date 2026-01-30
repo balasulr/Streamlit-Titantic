@@ -357,7 +357,7 @@ chart_type = col1.selectbox(
 
 with col2:
     if chart_type in ["Pie Chart", "Histogram"]:
-        category = st.selectbox("Select Column", df_cleaned.columns, key="cat_select")
+        category = st.selectbox("Select Column", df_cleaned.columns, key="cat_select_clean")
     
     elif chart_type == "Bar Chart":
         bar_x = st.selectbox("X-axis Category", df_cleaned.columns, key="bar_x")
