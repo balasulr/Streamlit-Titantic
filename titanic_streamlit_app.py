@@ -75,9 +75,11 @@ st.write(df.describe(include='all').T)
 st.subheader("Graphs to visualize data distributions and relationships:")
 st.header("Data Visualization")
 
-# Two dropdowns
+# Two dropdowns for selecting chart type and columns
+# Create two columns for layout
 col1, col2 = st.columns(2)
 
+# Chart type selection
 chart_type = col1.selectbox(
     "Select Chart Type",
     [ "Pie Chart",
@@ -92,22 +94,27 @@ chart_type = col1.selectbox(
 
 # Dynamic column selection based on chart type
 with col2:
+    # Depending on chart type, show relevant dropdowns
     if chart_type in ["Pie Chart", "Histogram"]:
         category = st.selectbox("Select Column", df.columns, key="cat_select")
     
+    # Additional selections for other chart types
     elif chart_type == "Bar Chart":
         bar_x = st.selectbox("X-axis Category", df.columns, key="bar_x")
         bar_hue = st.selectbox("Group By", df.columns, key="bar_hue")
-
+    
+    # Scatter Plot (Simple)
     elif chart_type == "Scatter Plot (Simple)":
         x_col = st.selectbox("X-axis", df.columns, key="simple_x")
         y_col = st.selectbox("Y-axis", df.columns, key="simple_y")
-
+    
+    # Scatter Plot (Complex)
     elif chart_type == "Scatter Plot (Complex)":
         x_col = st.selectbox("X-axis", df.columns, key="complex_x")
         y_col = st.selectbox("Y-axis", df.columns, key="complex_y")
         hue_col = st.selectbox("Color By", df.columns, key="complex_hue")
     
+    # Heatmap (Categorical)
     elif chart_type == "Heatmap (Categorical)":
         categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
         categorical_cols += ["Pclass", "Survived", "Embarked", "Sex"]
@@ -115,6 +122,7 @@ with col2:
         heat_x = st.selectbox("Heatmap X-axis", categorical_cols, index=categorical_cols.index("Pclass"), key="cat_heat_x")
         heat_y = st.selectbox("Heatmap Y-axis", categorical_cols, index=categorical_cols.index("Survived"), key="cat_heat_y")
     
+    # Heatmap (Numerical Correlation)
     elif chart_type == "Heatmap (Numerical Correlation)":
         st.write("Shows correlation between numerical features.")
         # No dropdowns needed
@@ -123,6 +131,8 @@ with col2:
 # Pie Chart
 if chart_type == "Pie Chart":
     fig, ax = plt.subplots(figsize=(3, 3))
+    
+    # Create pie chart
     df[category].value_counts().plot(
         kind="pie",
         autopct="%1.1f%%",
@@ -145,7 +155,7 @@ elif chart_type == "Bar Chart":
 elif chart_type == "Histogram":
     fig, ax = plt.subplots(figsize=(4, 3))
     
-    # Check if the column is categorical or numerical
+    # Checks if the column is categorical or numerical
     if df[category].dtype == "object":
         # Categorical histogram
         df[category].value_counts().plot(kind="bar", ax=ax, color="purple")
@@ -154,7 +164,6 @@ elif chart_type == "Histogram":
         # Numerical histogram
         ax.hist(df[category].dropna(), bins=20, color="skyblue", edgecolor="black")
         ax.set_title(f"Histogram of {category}")
-    
     ax.set_xlabel(category)
     ax.set_ylabel("Count")
     st.pyplot(fig)
@@ -168,7 +177,6 @@ elif chart_type == "Scatter Plot (Simple)":
     for col in df_numeric.columns:
         if df_numeric[col].dtype == "object":
             df_numeric[col] = df_numeric[col].astype("category").cat.codes
-
     ax.scatter(df_numeric[x_col], df_numeric[y_col], alpha=0.6)
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
@@ -186,10 +194,12 @@ elif chart_type == "Scatter Plot (Complex)":
 elif chart_type == "Heatmap (Categorical)":    
     df_clean = df[[heat_x, heat_y]].dropna()
     heatmap_data = df_clean.pivot_table(index=heat_y, columns=heat_x, aggfunc="size", fill_value=0)
-
+    
+    # Warn if too many categories
     if heatmap_data.shape[0] > 50 or heatmap_data.shape[1] > 50:
         st.warning("This heatmap has too many categories and may take a long time to render.")
 
+    # Check if heatmap_data is empty
     if heatmap_data.empty:
         st.write("No data available for the selected combination.")
     else:
@@ -216,6 +226,6 @@ missing_df = pd.DataFrame({
     "Missing Count": missing_counts,
     "Missing %": missing_percent
 })
-st.dataframe(missing_df[missing_df["Missing Count"] > 0])
 
-st.write("There are missing values in the dataset")
+st.dataframe(missing_df[missing_df["Missing Count"] > 0])
+st.write("There are missing values present in the dataset")
